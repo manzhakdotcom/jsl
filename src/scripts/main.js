@@ -4,16 +4,6 @@ class Select {
   constructor() {
     this.data = {};
 
-    this.mnemo = [
-      '20000',
-      '10000',
-      '10001',
-      '40001',
-      '40002',
-      '90000',
-      '90001',
-    ];
-
     this.opts = {
       url: 'php/getData.php',
       table: 'kp',
@@ -22,15 +12,23 @@ class Select {
   }
   
 
-  ajax(opts, callback) {
-      let xhr = new XMLHttpRequest();
-      xhr.open('GET', opts.url + '?table=' + opts.table + '&param=' + opts.param);
-      xhr.send(null);
-      xhr.onreadystatechange = function () {
-          if (xhr.readyState === 4 && xhr.status === 200) {
-              callback(xhr.responseText);
-          }
-      };
+  ajax(opts, resolve, reject) {
+    let xhr = new XMLHttpRequest();
+    xhr.open('GET', opts.url + '?table=' + opts.table + '&param=' + opts.param);
+  
+    xhr.onload = function () {
+      if (this.status === 200) {
+          resolve(this.responseText);
+      } else {
+        let error = new Error(this.statusText);
+        error.code = this.status;
+        reject(error);
+      }
+    };
+    xhr.onerror = function() {
+      reject(new Error("Network Error"));
+    };
+    xhr.send(null);
   }
 
   setMnemoText(data){
@@ -103,27 +101,15 @@ class Select {
         this.data.stations = data;
         console.log(data);
         return new Promise((resolve, reject) => {
-          let xhr = new XMLHttpRequest();
-          xhr.open('GET', this.opts.url + '?table=' + 'ts' + '&param=' + data[0].id);
-        
-          xhr.onload = function () {
-            if (this.status === 200) {
-                resolve(this.responseText);
-            } else {
-              let error = new Error(this.statusText);
-              error.code = this.status;
-              reject(error);
-            }
-        };
-        xhr.onerror = function() {
-          reject(new Error("Network Error"));
-        };
-        xhr.send(null);
+          this.ajax({
+            url: 'php/getData.php',
+            table: 'ts',
+            param: data[0].id,
+          },resolve, reject);
         });
       }, 
       error => console.log(error)
     ).then(
-
         result => {
           this.data.ts = JSON.parse(result);
           console.log(this.data);
@@ -134,29 +120,14 @@ class Select {
 
   getDataFromDB(){
       return new Promise((resolve, reject) => {
-        
-        let xhr = new XMLHttpRequest();
-        xhr.open('GET', this.opts.url + '?table=' + this.opts.table + '&param=' + this.opts.param);
-        
-        xhr.onload = function () {
-            if (this.status === 200) {
-                resolve(this.responseText);
-            } else {
-              let error = new Error(this.statusText);
-              error.code = this.status;
-              reject(error);
-            }
-        };
-        xhr.onerror = function() {
-          reject(new Error("Network Error"));
-        };
-        xhr.send(null);
+        this.ajax({
+          url: 'php/getData.php',
+          table: 'kp',
+          param: '',
+        }, resolve, reject)
       });
   }
-
 }
-
-
 
 let data = new Select();
 
